@@ -5,6 +5,8 @@
 
 This repository contains analysis of Car Accidents in the USA from 2016 to 2023.
 
+------------------------------------------------------------------------
+
 ### Project Structure:
 
 ```         
@@ -19,15 +21,13 @@ This repository contains analysis of Car Accidents in the USA from 2016 to 2023.
 
 ## Data Sources and Preparation
 
-**Data Sources**\
+**Data Sources**
 - Kaggle
 
-------------------------------------------------------------------------
 
 ## Requirements
 
-------------------------------------------------------------------------
-### Models
+## Models
 
 
 ------------------------------------------------------------------------
