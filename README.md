@@ -27,13 +27,6 @@ This project uses the [US Accidents (2016 - 2023) dataset](https://www.kaggle.co
 
 Download it and place the CSV file in the `data/` folder before running any code.
 
-
-## Requirements
-
-## Models
-
-
-------------------------------------------------------------------------
 ## Authors
 
 

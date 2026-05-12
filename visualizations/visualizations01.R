@@ -4,7 +4,7 @@ library(corrplot)
 library(ggplot2)
 library(maps)
 
-accidents <- read.csv("US_Accidents_March23_sampled_500k.csv")
+accidents <- read.csv("data/US_Accidents_March23_sampled_500k.csv")
 
 # get dates out, fix severity
 accidents <- accidents %>% mutate(
