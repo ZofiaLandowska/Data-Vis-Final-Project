@@ -112,3 +112,76 @@ ggplot() +
   theme(legend.position = "none") +
   labs(title = "Accident Density in California", subtitle = "Dark red areas have the most accidents")
 
+# -------------
+accidents <- read.csv("data/US_Accidents_March23_sampled_500k.csv")
+# Create a month column
+accidents <- accidents %>% mutate(Month = month(as.POSIXct(Start_Time), label = TRUE))
+
+# Radial chart of number of accidents by month
+
+acc_by_month <- accidents %>%
+  group_by(Month) %>%
+  summarize(count = n())
+
+ggplot(acc_by_month, aes(x = Month, y = count, fill = count)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  scale_fill_gradient(low="palegreen", high="firebrick") +
+  coord_polar() + 
+  theme_minimal() +
+  theme(axis.text.y = element_blank()) +
+  labs(title = "Number of Accidents by Month", x=NULL, y=NULL, fill="Number of Accidents")
+
+
+# Bar chart of most common road features at accident sites 
+
+road_features <- c("Amenity", "Bump", "Crossing", "Give_Way", "Junction", 
+                   "No_Exit", "Railway", "Station", "Stop", "Traffic_Signal")
+
+acc_road_features <- accidents %>%
+  pivot_longer(cols = all_of(road_features), names_to = "Feature", values_to = "Present") %>%
+  filter(Present == "True") %>%
+  group_by(Feature) %>%
+  summarise(count = n())
+
+ggplot(acc_road_features, aes(x = reorder(Feature, count), y = count)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  theme_minimal() +
+  labs(title = "Most Common Road Features at Accident Sites", x = "Road Feature", y = "Number of Accidents")
+
+# Accident patterns by year - normalize results 
+acc_by_year <- accidents %>%
+  mutate(
+    Year = year(as.POSIXct(Start_Time)),
+    Hour = hour(as.POSIXct(Start_Time)),
+    DayOfWeek = wday(as.POSIXct(Start_Time), label = TRUE, abbr = TRUE)
+  ) %>%
+  filter(Year %in% c(2019, 2020, 2021, 2022)) %>%
+  group_by(Year, DayOfWeek, Hour) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(Year) %>%
+  mutate(percentage = count / sum(count)) %>%
+  ungroup() %>%
+  mutate(DayOfWeek = factor(DayOfWeek, levels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")))
+
+
+ggplot(acc_by_year, aes(x = DayOfWeek, y = Hour, fill = percentage)) +
+  geom_tile() +
+  facet_wrap(~ Year) +
+  scale_fill_viridis_c(option = "magma", labels = scales::percent) +
+  scale_y_continuous(breaks = c(0, 4, 8, 12, 16, 20, 24),
+                     labels = c("12am", "4am", "8am", "12pm", "4pm", "8pm", "12am")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Accident Patterns (2019–2022)",
+       subtitle = "Each cell shows the percentage of that year's total accidents",
+       x = NULL, y = NULL, fill = "Percentage of \nyearly accidents")
+
+
+
+
+
+
+
+
+
