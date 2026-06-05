@@ -1,0 +1,221 @@
+---
+title: "HW4"
+author: "Massiel Payero Garcia"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(dplyr)
+library(corrplot)
+library(viridis)
+```
+
+
+```{r}
+accident <- US_Accidents_March23_sampled_500k
+accident
+```
+
+
+```{r}
+# extract time variables
+accident <- accident %>%
+  mutate(
+    Start_Hour = hour(Start_Time),
+    Start_Month = month(Start_Time, label = TRUE),
+    Start_Day = wday(Start_Time, label = TRUE),
+    Start_Year = year(Start_Time)
+  )
+```
+
+
+```{r}
+# Table: Severity per Year
+severity_time_table <- accident %>%
+  filter(!is.na(Severity), !is.na(Start_Year)) %>%
+  select(Start_Year, Severity) %>%
+  table()
+
+print(severity_time_table)
+```
+
+
+```{r}
+# Mosaic plot
+mosaicplot(severity_time_table,
+           main = "Accident Severity by Year",
+           xlab = "Year",
+           ylab = "Severity Level",
+           color = c("springgreen4", "gold2", "orange2", "tomato3"),
+           cex.axis = 0.9,
+           las = 1,
+           border = "black")
+
+```
+```{r}
+dim(severity_time_table)
+dimnames(severity_time_table)
+```
+
+
+```{r}
+# Increase right margin to make room for legend
+old_par <- par(mar = c(5, 4, 4, 6))  # Increase right margin (last value)
+
+colnames(severity_time_table) <- rep("", ncol(severity_time_table))
+
+# Create mosaic plot
+mosaicplot(severity_time_table,
+           main = "Accident Severity by Year",
+           xlab = "",  # Remove x-axis label
+           ylab = "",  # Remove y-axis label
+           color = c("springgreen4", "gold2", "orange2", "tomato3"),
+           cex.axis = 0.9,
+           las = 1,
+           border = "black")
+
+# Add legend outside the plot area
+legend("right",
+       legend = c("1", "2", "3", "4"),
+       fill = c("springgreen4", "gold2", "orange2", "tomato3"),
+       title = "Severity Level",
+       cex = 0.8,
+       bty = "n",
+       inset = c(-0.14, 0),
+       xpd = TRUE)
+
+# Restore original margins
+par(old_par)
+
+```
+
+```{r}
+# Create mosaic plot
+mosaicplot(severity_time_table,
+           main = "Accident Severity by Year",
+           xlab = "",
+           ylab = "",
+           color = c("springgreen4", "gold2", "orange2", "tomato3"),
+           cex.axis = 0.9,
+           las = 1,
+           border = "black")
+
+# Add legend in right margin
+legend("topright",
+       inset = c(-0.25, 0),
+       legend = c("1", "2", "3", "4"),
+       fill = c("springgreen4", "gold2", "orange2", "tomato3"),
+       title = "Severity Level",
+       bty = "n",
+       xpd = TRUE)
+```
+
+
+```{r}
+# Table: Percentage of Severity 4 accidents by state
+severity4_by_state <- accident %>%
+  filter(!is.na(State), !is.na(Severity)) %>%
+  group_by(State) %>%
+  summarise(
+    Total_Accidents = n(),
+    Severity_4_Count = sum(Severity == 4),
+    Severity_4_Percentage = (Severity_4_Count / Total_Accidents) * 100
+  ) %>%
+  arrange(desc(Severity_4_Percentage))
+
+
+print(severity4_by_state,n=50)
+mean(severity4_by_state$Severity_4_Percentage)
+```
+
+```{r}
+statesmap = map_data('state')
+head(statesmap)
+```
+
+```{r}
+# statesmap plotted
+ggplot(statesmap, aes(long, lat, group=group)) + 
+  geom_polygon(colour='black', fill= NA)
+```
+
+```{r}
+# state abbreviation to full name lookup table
+state_lookup <- data.frame(
+  State_Abbr = state.abb,
+  State_Full = tolower(state.name)
+)
+
+# Add Washington DC (not in state.abb)
+state_lookup <- rbind(state_lookup, data.frame(State_Abbr = "DC", State_Full = "district of columbia"))
+
+# Join severity data with the lookup
+severity4_with_fullnames <- severity4_by_state %>%
+  left_join(state_lookup, by = c("State" = "State_Abbr")) %>%
+  filter(!is.na(State_Full))  # remove states without matches
+
+# join with map data
+sev_map <- left_join(statesmap, severity4_with_fullnames,
+                     by = c("region" = "State_Full"))
+```
+
+
+```{r}
+# Plot map
+ggplot(sev_map, 
+       aes(x = long, y = lat, group = group, fill = Severity_4_Percentage)) +
+  geom_polygon(colour = "black", linewidth = 0.1) +
+  #coord_map("polyconic") + 
+  scale_fill_viridis_c(
+    #option = "D", 
+    direction = -1,
+    name = "Severity 4\nAccidents (%)"
+  ) +  
+  labs(title = "Percentage of Severity 4 Accidents by State") +
+  theme_minimal()
+```
+
+```{r}
+# South Dakota has 36.8% of accidents labelled as severity 4. This is the highest of any state.
+# North Dakota has 0.42% of accidents labelled as severity 4. This is the lowest of any state.
+# The average for all states is 5.05%.
+```
+
+```{r}
+# Plot map
+ggplot(sev_map, 
+       aes(x = long, y = lat, group = group, fill = Severity_4_Percentage)) +
+  geom_polygon(colour = "black", linewidth = 0.1) +
+  #coord_map("polyconic") + 
+  scale_fill_viridis_c(
+    #option = "D", 
+    direction = -1,
+    name = "Severity 4\nAccidents (%)"
+  ) +  
+  labs(title = "Percentage of Severity 4 Accidents by State") +
+  theme_minimal() +
+  theme(
+    axis.title = element_blank(),        # Remove axis labels
+    axis.text = element_blank(),         # Remove axis text (numbers)
+    axis.ticks = element_blank(),        # Remove axis ticks
+    panel.grid = element_blank(),        # Remove all gridlines
+    panel.background = element_blank()   # Optional: remove panel background
+  )
+```
+
+
+
+
+
+
+
+
+
