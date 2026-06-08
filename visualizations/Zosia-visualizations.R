@@ -154,6 +154,7 @@ northern_states  <- c("CT", "IL", "IN", "IA", "ME", "MA", "MI",
                       "VT", "WI")
 
 
+# Filter accident data
 south_data <- accidents %>%
   filter(State %in% southern_states) %>%
   group_by(Month) %>%
@@ -164,7 +165,7 @@ north_data <- accidents %>%
   group_by(Month) %>%
   summarize(count = n())
 
-# Recalculate breaks per region so the legend fits the data
+# Calculate breaks per region so the legend fits the data
 south_breaks <- c(min(south_data$count),
                   round(mean(range(south_data$count)), -3),
                   max(south_data$count))
@@ -227,10 +228,10 @@ ggplot(combined_data, aes(x = Month, y = count, fill = count)) +
   facet_wrap(~ Region) +
   theme_minimal() +
   theme(
-    axis.text.y  = element_blank(),
-    plot.title   = element_text(size = 17, hjust = 0.5),
-    axis.text    = element_text(size = 10),
-    strip.text   = element_text(size = 13, face = "bold")
+    axis.text.y = element_blank(),
+    plot.title = element_text(size = 17, hjust = 0.5),
+    axis.text = element_text(size = 10),
+    strip.text = element_text(size = 13, face = "bold")
   ) +
   labs(title = "Number of Accidents by Month", x = NULL, y = NULL, fill = "Number of Accidents")
 

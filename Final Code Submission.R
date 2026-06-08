@@ -5,6 +5,7 @@
 # import libs
 library(dplyr)
 library(tidyr)
+library(tidyverse)
 library(lubridate)
 library(corrplot)
 library(ggplot2)
@@ -367,7 +368,61 @@ ggplot(hourday_acc, aes(x=DayOfWeek, y=Hour, fill=crashes)) +
 
 
 
-# VIZ 4 - Zofia code
+# VIZ 4 - Radial Plot
+# Define regions
+southern_states <- c("AL", "AR", "FL", "GA", "KY", "LA", "MS",
+                     "NC", "SC", "TN", "VA", "WV", "TX", "OK")
+
+northern_states  <- c("CT", "IL", "IN", "IA", "ME", "MA", "MI",
+                      "MN", "NH", "NJ", "NY", "OH", "PA", "RI",
+                      "VT", "WI")
+
+# Create a month column
+accidents <- accidents %>% mutate(Month = month(as.POSIXct(Start_Time), label = TRUE))
+
+south_data <- accidents %>%
+  filter(State %in% southern_states) %>%
+  group_by(Month) %>%
+  summarize(count = n()) %>%
+  mutate(Region = "South")
+
+north_data <- accidents %>%
+  filter(State %in% northern_states) %>%
+  group_by(Month) %>%
+  summarize(count = n()) %>%
+  mutate(Region = "North")
+
+combined_data <- bind_rows(south_data, north_data)
+
+# Calculate breaks
+min_count <- min(combined_data$count)
+max_count <- max(combined_data$count)
+mid_count <- round(mean(c(min_count, max_count)), -3)
+breaks_vals <- c(min_count, mid_count, max_count)
+
+# Shared y-axis ceiling
+y_max <- max(combined_data$count)
+
+# Plot
+ggplot(combined_data, aes(x = Month, y = count, fill = count)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  scale_fill_gradient(
+    low = "#132B43", high = "#56B1F7",
+    breaks = breaks_vals,
+    labels = c(min_count, mid_count, max_count)
+  ) +
+  scale_y_continuous(limits = c(0, y_max)) +
+  coord_polar() +
+  facet_wrap(~ Region) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_blank(),
+    plot.title = element_text(size = 17, hjust = 0.5),
+    axis.text = element_text(size = 10),
+    strip.text = element_text(size = 13, face = "bold")
+  ) +
+  labs(title = "Number of Accidents by Month", x = NULL, y = NULL, fill = "Number of Accidents")
+
 
 
 # VIZ 5 - Mosaic plot 1:
