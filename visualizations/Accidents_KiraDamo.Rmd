@@ -1,0 +1,160 @@
+---
+title: "Accidents_KiraDamo"
+author: "Kira Damo"
+date: "2026-06-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(gganimate)
+library(gifski)
+library(lubridate)
+```
+
+```{r}
+df <- read_csv('/Users/kiradamo/Documents/DSC 465/US_Accidents_March23.csv')
+```
+
+```{r}
+#taking all environmental features
+factor_cols <- c(
+  "Amenity",
+  "Bump",
+  "Crossing",
+  "Give_Way",
+  "Junction",
+  "No_Exit",
+  "Railway",
+  "Roundabout",
+  "Station",
+  "Stop",
+  "Traffic_Calming",
+  "Traffic_Signal",
+  "Turning_Loop"
+)
+```
+
+
+## Creating Waffle Chart based on Environmental Factors
+Based on the feature types of the data, I decided to make a waffle chart of the environmental factors to see if the cause or presence of one of these factors influences the amount of accidents. 
+
+```{r}
+#adding up the counts of each of the environmental factors
+factor_counts <- colSums(df[factor_cols], na.rm = TRUE)
+
+total_count <- sum(factor_counts)
+
+#finding the percent ratio of all
+factor_percent <- round(factor_counts / total_count * 100)
+#making sure there are no zeroes
+factor_percent <- factor_percent[factor_percent > 0]
+```
+
+```{r}
+#renaming without underscores, this will also be good for the legend
+clean_labels <- c(
+  'Amenity' = "Amenity",
+  'Bump' = "Bump",
+  'Crossing' = "Crossing",
+  'Give_Way' = "Give Way",
+  'Junction' = "Junction",
+  'No_Exit' = "No Exit",
+  'Railway' = "Railway",
+  'Roundabout' = "Roundabout",
+  'Station' = "Station",
+  'Stop' = "Stop Sign",
+  'Traffic_Calming' = "Traffic Calming",
+  'Traffic_Signal' = "Traffic Signal",
+  'Turning_Loop' = "Turning Loop"
+)
+```
+
+
+```{r}
+#making waffle chart data its own data frame
+#the data is the coordinates of each tile.
+waffle_df <- data.frame(
+  category = rep(
+    clean_labels[names(factor_percent)],
+    factor_percent
+  )
+)
+
+#making the waffle chart a 10 x 10 since we are using percents and the data is very large
+waffle_df$x <- rep(1:10, times = 10)
+waffle_df$y <- rep(10:1, each = 10)
+```
+
+
+
+```{r}
+waffle_df
+```
+
+```{r}
+#should be the number of tiles in waffle chart
+waffle_df %>% count(category)
+```
+
+[Color Reference](https://sape.inf.usi.ch/quick-reference/ggplot2/colour.html)
+
+```{r}
+#the closest to a waffle chart is a heatmap so this is made as a heat map but with borders!
+ggplot(waffle_df, aes(x = x, y = y, fill = category)) +
+  geom_tile(
+    color = "white",
+    linewidth = 0.5
+  ) + scale_fill_manual(values = c("Amenity" = "chartreuse4", 
+                               "Crossing" = "yellow2", 
+                               "Give Way" = "blue",
+                               "Junction" = "purple",
+                               "No Exit" = "darkorange2",
+                               "Railway" = "gray",
+                               "Station" = "steelblue",
+                               "Stop Sign" = "red1",
+                               "Traffic Signal" = "gray1")) +
+  coord_equal() +
+  theme_void() +
+  labs(
+    title = "Environmental Factors Near US Traffic Accidents",
+    fill = "Environmental Factor"
+  ) 
+```
+
+
+## Animated plot 
+
+```{r}
+#time based table that counts accidents by month and hour and sorts
+hour_df <- df %>%
+  mutate(
+    Start_Time = ymd_hms(Start_Time),
+    Hour = hour(Start_Time),
+    Month_Date = floor_date(Start_Time, "month"),
+    Month_Label = format(Month_Date, "%B %Y")) %>%
+  count(Month_Label, Month_Date, Hour) %>%
+  arrange(Month_Date, Hour)
+# animated plot
+ggplot(hour_df, aes(x = Hour, y = n, group = Month_Label)) +
+  geom_area(fill = "steelblue", alpha = 0.7) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  scale_x_continuous(breaks = seq(0, 23, by = 4), limits = c(0, 23)) +
+  transition_states(Month_Date, transition_length = 2, state_length = 3) +
+  theme_minimal() +
+  labs(
+    title = "Hourly Accident Pattern",
+    subtitle = "Month: {closest_state}", 
+    x = "Hour of Day",
+    y = "Number of Accidents"
+  )
+anim_save("hourly accidents.gif", width = 10, height = 6.5)
+```
+```
+
