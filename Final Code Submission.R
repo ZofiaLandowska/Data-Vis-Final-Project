@@ -465,5 +465,49 @@ ggplot(data=accidents) +
         plot.title=element_text(size=17, hjust=0.5)) # put title in middle
 
 
-# Viz 6:
-# Massiel's code
+# Viz 6 - Mosaic Plot 2:
+
+# extract time variables
+accident <- accident %>%
+  mutate(
+    Start_Hour = hour(Start_Time),
+    Start_Month = month(Start_Time, label = TRUE),
+    Start_Day = wday(Start_Time, label = TRUE),
+    Start_Year = year(Start_Time)
+  )
+
+# Table: Severity per Year
+severity_time_table <- accident %>%
+  filter(!is.na(Severity), !is.na(Start_Year)) %>%
+  select(Start_Year, Severity) %>%
+  table()
+
+mosaicplot(severity_time_table,
+           main = "Accident Severity by Year",
+           xlab = "Year",
+           ylab = "Severity Level",
+           color = c("springgreen4", "gold2", "orange2", "tomato3"),
+           cex.axis = 0.9,
+           las = 1,
+           border = "black")
+old_par <- par(mar = c(5, 4, 4, 6))  # Increase right margin (last value)
+colnames(severity_time_table) <- rep("", ncol(severity_time_table))
+# Create mosaic plot
+mosaicplot(severity_time_table,
+           main = "Accident Severity by Year",
+           xlab = "",  # Remove x-axis label
+           ylab = "",  # Remove y-axis label
+           color = c("springgreen4", "gold2", "orange2", "tomato3"),
+           cex.axis = 0.9,
+           las = 1,
+           border = "black")
+
+# Add legend outside the plot area
+legend("right",
+       legend = c("1", "2", "3", "4"),
+       fill = c("springgreen4", "gold2", "orange2", "tomato3"),
+       title = "Severity Level",
+       cex = 0.8,
+       bty = "n",
+       inset = c(-0.14, 0),
+       xpd = TRUE)
